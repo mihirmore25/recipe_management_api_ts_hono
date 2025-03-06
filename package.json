@@ -16,7 +16,9 @@
     "description": "",
     "dependencies": {
         "@hono/node-server": "^1.13.8",
+        "@types/bcryptjs": "^2.4.6",
         "@types/mongoose": "^5.11.96",
+        "bcryptjs": "^3.0.2",
         "concurrently": "^9.1.2",
         "hono": "^4.7.4",
         "mongoose": "^8.12.1",

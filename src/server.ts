@@ -2,11 +2,15 @@ import { Hono } from "hono";
 import { dbClient } from "./db/db";
 import { poweredBy } from "hono/powered-by";
 import { logger } from "hono/logger";
+import authRoutes from "./routes/auth";
 
 const app = new Hono();
 
 app.use(logger());
 app.use(poweredBy({ serverName: "Recipe Management REST API with Hono" }));
+
+// Routes
+app.route("/api/v1/auth", authRoutes);
 
 dbClient()
     .then()
