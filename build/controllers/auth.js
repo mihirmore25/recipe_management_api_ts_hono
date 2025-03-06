@@ -93,7 +93,7 @@ const login = (c) => __awaiter(void 0, void 0, void 0, function* () {
 exports.login = login;
 const logout = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const token = (0, cookie_1.getCookie)(c, "access_token");
-    const user_data = yield (0, jwt_1.verify)(token, "secret_mihir_jwt");
+    const user_data = yield (0, jwt_1.verify)(token, process.env.JWT_SECRET);
     const user = yield User_1.User.findById(user_data.id);
     console.log("Logout User --> ", user);
     const deletedCookie = (0, cookie_1.deleteCookie)(c, "access_token", {
