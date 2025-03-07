@@ -9,12 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRecipes = exports.createRecipe = void 0;
+exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
 const Recipe_1 = require("../models/Recipe");
 const jwt_1 = require("hono/jwt");
 const cookie_1 = require("hono/cookie");
 const encode_1 = require("hono/utils/encode");
 const cloudinary_1 = require("cloudinary");
+const mongoose_1 = require("mongoose");
 const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const token = (0, cookie_1.getCookie)(c, "access_token");
@@ -108,3 +109,24 @@ const getRecipes = (c) => __awaiter(void 0, void 0, void 0, function* () {
     return c.json({ status: true, data: recipes });
 });
 exports.getRecipes = getRecipes;
+const getRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const recipeId = c.req.param("id");
+    if (!(0, mongoose_1.isValidObjectId)(recipeId) || !recipeId) {
+        return c.json({
+            status: false,
+            message: "Please search recipe with valid recipe id.",
+        }, 404);
+    }
+    const recipe = yield Recipe_1.Recipe.findById(recipeId).select("-__v -createdAt -updatedAt");
+    if (recipe === null || undefined || 0) {
+        return c.json({
+            status: false,
+            message: `Recipe did not found with ${recipeId} id.`,
+        }, 404);
+    }
+    return c.json({
+        status: true,
+        data: recipe,
+    }, 200);
+});
+exports.getRecipe = getRecipe;

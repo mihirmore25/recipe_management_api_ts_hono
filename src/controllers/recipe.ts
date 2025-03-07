@@ -4,6 +4,7 @@ import { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import { encodeBase64 } from "hono/utils/encode";
 import { v2 as cloudinary } from "cloudinary";
+import { isValidObjectId } from "mongoose";
 
 export const createRecipe = async (c: Context) => {
     try {
@@ -135,4 +136,40 @@ export const getRecipes = async (c: Context) => {
     }
 
     return c.json({ status: true, data: recipes });
+};
+
+export const getRecipe = async (c: Context) => {
+    const recipeId = c.req.param("id");
+
+    if (!isValidObjectId(recipeId) || !recipeId) {
+        return c.json(
+            {
+                status: false,
+                message: "Please search recipe with valid recipe id.",
+            },
+            404
+        );
+    }
+
+    const recipe: IRecipeSchema | null = await Recipe.findById(recipeId).select(
+        "-__v -createdAt -updatedAt"
+    );
+
+    if (recipe === null || undefined || 0) {
+        return c.json(
+            {
+                status: false,
+                message: `Recipe did not found with ${recipeId} id.`,
+            },
+            404
+        );
+    }
+
+    return c.json(
+        {
+            status: true,
+            data: recipe,
+        },
+        200
+    );
 };

@@ -6,4 +6,5 @@ const recipe_1 = require("../controllers/recipe");
 const recipeRoutes = new hono_1.Hono();
 recipeRoutes.post("/", verify_1.verify, recipe_1.createRecipe);
 recipeRoutes.get("/", verify_1.verify, recipe_1.getRecipes);
+recipeRoutes.get("/:id", verify_1.verify, recipe_1.getRecipe);
 exports.default = recipeRoutes;
