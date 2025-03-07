@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
+exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
 const Recipe_1 = require("../models/Recipe");
 const jwt_1 = require("hono/jwt");
 const cookie_1 = require("hono/cookie");
@@ -130,3 +130,37 @@ const getRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     }, 200);
 });
 exports.getRecipe = getRecipe;
+const deleteRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const recipeId = c.req.param("id");
+        if (!(0, mongoose_1.isValidObjectId)(recipeId) || !recipeId) {
+            return c.json({
+                status: false,
+                message: "Please search recipe with valid recipe id.",
+            }, 404);
+        }
+        const recipe = yield Recipe_1.Recipe.findById(recipeId).select("-__v -createdAt -updatedAt");
+        if (recipe === null || undefined || 0) {
+            return c.json({
+                status: false,
+                message: `Recipe did not found with ${recipeId} id.`,
+            }, 404);
+        }
+        const user = c.get("user");
+        if (user._id.toString() === recipe.user.toString() || user.role === "admin") {
+            const deletedRecipe = yield Recipe_1.Recipe.findByIdAndDelete(recipeId).select("-__v -createdAt -updatedAt");
+            console.log("Deleted Recipe --> ", deletedRecipe);
+            const deleteImageFromCloudinary = yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
+            console.log(deleteImageFromCloudinary);
+            return c.json({
+                status: true,
+                data: deletedRecipe,
+                message: "Recipe has been deleted successfully.",
+            }, 200);
+        }
+    }
+    catch (error) {
+        return c.json({ error: error.message }, 500);
+    }
+});
+exports.deleteRecipe = deleteRecipe;

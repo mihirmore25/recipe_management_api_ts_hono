@@ -5,6 +5,7 @@ import { getCookie } from "hono/cookie";
 import { encodeBase64 } from "hono/utils/encode";
 import { v2 as cloudinary } from "cloudinary";
 import { isValidObjectId } from "mongoose";
+import { IUserSchema } from "../models/User";
 
 export const createRecipe = async (c: Context) => {
     try {
@@ -172,4 +173,61 @@ export const getRecipe = async (c: Context) => {
         },
         200
     );
+};
+
+export const deleteRecipe = async (c: Context) => {
+    try {
+        const recipeId = c.req.param("id");
+
+        if (!isValidObjectId(recipeId) || !recipeId) {
+            return c.json(
+                {
+                    status: false,
+                    message: "Please search recipe with valid recipe id.",
+                },
+                404
+            );
+        }
+
+        const recipe: IRecipeSchema | null = await Recipe.findById(
+            recipeId
+        ).select("-__v -createdAt -updatedAt");
+
+        if (recipe === null || undefined || 0) {
+            return c.json(
+                {
+                    status: false,
+                    message: `Recipe did not found with ${recipeId} id.`,
+                },
+                404
+            );
+        }
+
+        const user: IUserSchema = c.get("user");
+
+        if (user._id.toString() === recipe.user.toString() || user.role === "admin") {
+            const deletedRecipe: IRecipeSchema | null =
+                await Recipe.findByIdAndDelete(recipeId).select(
+                    "-__v -createdAt -updatedAt"
+                );
+
+            console.log("Deleted Recipe --> ", deletedRecipe);
+
+            const deleteImageFromCloudinary = await cloudinary.uploader.destroy(
+                recipe.recipeImage.publicId
+            );
+            console.log(deleteImageFromCloudinary);
+
+            return c.json(
+                {
+                    status: true,
+                    data: deletedRecipe,
+                    message: "Recipe has been deleted successfully.",
+                },
+                200
+            );
+        }
+    } catch (error) {
+        return c.json({ error: (error as Error).message }, 500);
+    }
 };
