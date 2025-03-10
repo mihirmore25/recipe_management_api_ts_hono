@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
+exports.updateRecipe = exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
 const Recipe_1 = require("../models/Recipe");
 const jwt_1 = require("hono/jwt");
 const cookie_1 = require("hono/cookie");
@@ -147,7 +147,8 @@ const deleteRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
             }, 404);
         }
         const user = c.get("user");
-        if (user._id.toString() === recipe.user.toString() || user.role === "admin") {
+        if (user._id.toString() === recipe.user.toString() ||
+            user.role === "admin") {
             const deletedRecipe = yield Recipe_1.Recipe.findByIdAndDelete(recipeId).select("-__v -createdAt -updatedAt");
             console.log("Deleted Recipe --> ", deletedRecipe);
             const deleteImageFromCloudinary = yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
@@ -158,9 +159,89 @@ const deleteRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "Recipe has been deleted successfully.",
             }, 200);
         }
+        return c.json({
+            status: false,
+            message: "You can only delete your own recipe.",
+        });
     }
     catch (error) {
         return c.json({ error: error.message }, 500);
     }
 });
 exports.deleteRecipe = deleteRecipe;
+const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const formBody = yield c.req.formData();
+        // create object literal for storing req body of multipart-data
+        const reqBody = {};
+        for (const [key, value] of formBody.entries()) {
+            reqBody[key] = value;
+        }
+        // console.log(reqBody);
+        const { title, description, totalTime, prepTime, cookingTime, ingredients, instructions, calories, carbs, protein, fat, } = reqBody;
+        const recipeId = c.req.param("id");
+        if (!(0, mongoose_1.isValidObjectId)(recipeId) || !recipeId) {
+            return c.json({
+                status: false,
+                message: "Please search recipe with valid recipe id.",
+            }, 404);
+        }
+        const recipe = yield Recipe_1.Recipe.findById(recipeId).select("-__v -createdAt -updatedAt");
+        if (recipe === null || undefined || 0) {
+            return c.json({
+                status: false,
+                message: `Recipe did not found with ${recipeId} id.`,
+            }, 404);
+        }
+        const user = c.get("user");
+        if (user._id.toString() === recipe.user.toString() ||
+            user.role === "admin") {
+            const body = yield c.req.parseBody();
+            const image = body["image"];
+            if (image) {
+                const byteArrayBuffer = yield image.arrayBuffer();
+                const base64 = (0, encode_1.encodeBase64)(byteArrayBuffer);
+                const recipeImage = yield cloudinary_1.v2.uploader.upload(`data:image/png;base64,${base64}`, { resource_type: "auto", folder: "hono_uploads" });
+                console.log("file is uploaded on cloudinary ", recipeImage.url);
+                console.log(recipe.recipeImage);
+                const deleteImageFromCloudinary = yield cloudinary_1.v2.uploader.destroy(recipe.recipeImage.publicId);
+                console.log(deleteImageFromCloudinary);
+                // Update recipeImage only if new image is provided
+                recipe.recipeImage = {
+                    publicId: recipeImage.public_id || recipe.recipeImage.publicId,
+                    imageUrl: recipeImage.url || recipe.recipeImage.imageUrl,
+                };
+            }
+            const updatedRecipe = yield Recipe_1.Recipe.findByIdAndUpdate(recipeId, {
+                $set: {
+                    recipeImage: recipe.recipeImage,
+                    title,
+                    description,
+                    totalTime,
+                    prepTime,
+                    cookingTime,
+                    ingredients,
+                    instructions,
+                    calories,
+                    carbs,
+                    protein,
+                    fat,
+                },
+            }, { new: true }).select("-__V");
+            console.log("Updated Recipe --> ", updatedRecipe);
+            return c.json({
+                status: true,
+                data: updatedRecipe,
+                message: "Recipe has been updated successfully.",
+            }, 200);
+        }
+        return c.json({
+            status: false,
+            message: "You can only update your own recipe.",
+        });
+    }
+    catch (error) {
+        return c.json({ error: error.message }, 500);
+    }
+});
+exports.updateRecipe = updateRecipe;

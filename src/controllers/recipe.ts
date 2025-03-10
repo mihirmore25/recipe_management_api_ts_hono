@@ -205,7 +205,10 @@ export const deleteRecipe = async (c: Context) => {
 
         const user: IUserSchema = c.get("user");
 
-        if (user._id.toString() === recipe.user.toString() || user.role === "admin") {
+        if (
+            user._id.toString() === recipe.user.toString() ||
+            user.role === "admin"
+        ) {
             const deletedRecipe: IRecipeSchema | null =
                 await Recipe.findByIdAndDelete(recipeId).select(
                     "-__v -createdAt -updatedAt"
@@ -227,6 +230,141 @@ export const deleteRecipe = async (c: Context) => {
                 200
             );
         }
+
+        return c.json({
+            status: false,
+            message: "You can only delete your own recipe.",
+        });
+    } catch (error) {
+        return c.json({ error: (error as Error).message }, 500);
+    }
+};
+
+export const updateRecipe = async (c: Context) => {
+    try {
+        const formBody = await c.req.formData();
+
+        // create object literal for storing req body of multipart-data
+        const reqBody: Record<string, string | File> = {};
+
+        for (const [key, value] of formBody.entries()) {
+            reqBody[key] = value;
+        }
+
+        // console.log(reqBody);
+        const {
+            title,
+            description,
+            totalTime,
+            prepTime,
+            cookingTime,
+            ingredients,
+            instructions,
+            calories,
+            carbs,
+            protein,
+            fat,
+        } = reqBody;
+
+        const recipeId = c.req.param("id");
+
+        if (!isValidObjectId(recipeId) || !recipeId) {
+            return c.json(
+                {
+                    status: false,
+                    message: "Please search recipe with valid recipe id.",
+                },
+                404
+            );
+        }
+
+        const recipe: IRecipeSchema | null = await Recipe.findById(
+            recipeId
+        ).select("-__v -createdAt -updatedAt");
+
+        if (recipe === null || undefined || 0) {
+            return c.json(
+                {
+                    status: false,
+                    message: `Recipe did not found with ${recipeId} id.`,
+                },
+                404
+            );
+        }
+
+        const user: IUserSchema = c.get("user");
+
+        if (
+            user._id.toString() === recipe.user.toString() ||
+            user.role === "admin"
+        ) {
+            const body = await c.req.parseBody();
+            const image = body["image"] as File;
+
+            if (image) {
+                const byteArrayBuffer = await image.arrayBuffer();
+                const base64 = encodeBase64(byteArrayBuffer);
+                const recipeImage = await cloudinary.uploader.upload(
+                    `data:image/png;base64,${base64}`,
+                    { resource_type: "auto", folder: "hono_uploads" }
+                );
+
+                console.log("file is uploaded on cloudinary ", recipeImage.url);
+
+                console.log(recipe.recipeImage);
+
+                const deleteImageFromCloudinary =
+                    await cloudinary.uploader.destroy(
+                        recipe.recipeImage.publicId
+                    );
+                console.log(deleteImageFromCloudinary);
+
+                // Update recipeImage only if new image is provided
+                recipe.recipeImage = {
+                    publicId:
+                        recipeImage.public_id || recipe.recipeImage.publicId,
+                    imageUrl: recipeImage.url || recipe.recipeImage.imageUrl,
+                };
+            }
+
+            const updatedRecipe: IRecipeSchema | null =
+                await Recipe.findByIdAndUpdate(
+                    recipeId,
+                    {
+                        $set: {
+                            recipeImage: recipe.recipeImage,
+                            title,
+                            description,
+                            totalTime,
+                            prepTime,
+                            cookingTime,
+                            ingredients,
+                            instructions,
+                            calories,
+                            carbs,
+                            protein,
+                            fat,
+                        },
+                    },
+                    { new: true }
+                ).select("-__V");
+
+            console.log("Updated Recipe --> ", updatedRecipe);
+
+            return c.json(
+                {
+                    status: true,
+                    data: updatedRecipe,
+                    message: "Recipe has been updated successfully.",
+                },
+                200
+            );
+        }
+
+        return c.json({
+            status: false,
+            message: "You can only update your own recipe.",
+        });
     } catch (error) {
         return c.json({ error: (error as Error).message }, 500);
     }
