@@ -255,9 +255,22 @@ const getUserRecipes = (c) => __awaiter(void 0, void 0, void 0, function* () {
         }, 404);
     }
     const user = yield User_1.User.findById(userId);
+    if (!user)
+        return c.json({
+            status: false,
+            message: "User did not found! Or it does not exist!",
+            data: [],
+        }, 404);
     const recipes = yield Recipe_1.Recipe.find({ user: userId }).sort({
         createdAt: -1,
     });
+    if (recipes.length === 0) {
+        return c.json({
+            status: false,
+            message: "No recipes found for given user!",
+            data: [],
+        });
+    }
     return c.json({
         status: true,
         data: { numberOfRecipes: recipes.length, recipes, user },

@@ -385,9 +385,27 @@ export const getUserRecipes = async (c: Context) => {
 
     const user: IUserSchema | null = await User.findById(userId);
 
+    if (!user)
+        return c.json(
+            {
+                status: false,
+                message: "User did not found! Or it does not exist!",
+                data: [],
+            },
+            404
+        );
+
     const recipes: IRecipeSchema[] = await Recipe.find({ user: userId }).sort({
         createdAt: -1,
     });
+
+    if (recipes.length === 0) {
+        return c.json({
+            status: false,
+            message: "No recipes found for given user!",
+            data: [],
+        });
+    }
 
     return c.json({
         status: true,
