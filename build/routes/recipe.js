@@ -9,4 +9,5 @@ recipeRoutes.get("/", verify_1.verify, recipe_1.getRecipes);
 recipeRoutes.get("/:id", verify_1.verify, recipe_1.getRecipe);
 recipeRoutes.delete("/:id", verify_1.verify, recipe_1.deleteRecipe);
 recipeRoutes.put("/:id", verify_1.verify, recipe_1.updateRecipe);
+recipeRoutes.get("/user/:id", verify_1.verify, recipe_1.getUserRecipes);
 exports.default = recipeRoutes;

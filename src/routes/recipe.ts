@@ -6,6 +6,7 @@ import {
     updateRecipe,
     getRecipe,
     getRecipes,
+    getUserRecipes,
 } from "../controllers/recipe";
 const recipeRoutes = new Hono();
 
@@ -14,5 +15,6 @@ recipeRoutes.get("/", verify, getRecipes);
 recipeRoutes.get("/:id", verify, getRecipe);
 recipeRoutes.delete("/:id", verify, deleteRecipe);
 recipeRoutes.put("/:id", verify, updateRecipe);
+recipeRoutes.get("/user/:id", verify, getUserRecipes);
 
 export default recipeRoutes;

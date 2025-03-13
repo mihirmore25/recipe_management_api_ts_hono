@@ -5,7 +5,7 @@ import { getCookie } from "hono/cookie";
 import { encodeBase64 } from "hono/utils/encode";
 import { v2 as cloudinary } from "cloudinary";
 import { isValidObjectId } from "mongoose";
-import { IUserSchema } from "../models/User";
+import { IUserSchema, User } from "../models/User";
 
 export const createRecipe = async (c: Context) => {
     try {
@@ -368,4 +368,29 @@ export const updateRecipe = async (c: Context) => {
     } catch (error) {
         return c.json({ error: (error as Error).message }, 500);
     }
+};
+
+export const getUserRecipes = async (c: Context) => {
+    const userId = c.req.param("id");
+
+    if (!isValidObjectId(userId) || !userId) {
+        return c.json(
+            {
+                status: false,
+                message: "Please search user with valid user id.",
+            },
+            404
+        );
+    }
+
+    const user: IUserSchema | null = await User.findById(userId);
+
+    const recipes: IRecipeSchema[] = await Recipe.find({ user: userId }).sort({
+        createdAt: -1,
+    });
+
+    return c.json({
+        status: true,
+        data: { numberOfRecipes: recipes.length, recipes, user },
+    });
 };

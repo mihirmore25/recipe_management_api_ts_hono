@@ -9,13 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateRecipe = exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
+exports.getUserRecipes = exports.updateRecipe = exports.deleteRecipe = exports.getRecipe = exports.getRecipes = exports.createRecipe = void 0;
 const Recipe_1 = require("../models/Recipe");
 const jwt_1 = require("hono/jwt");
 const cookie_1 = require("hono/cookie");
 const encode_1 = require("hono/utils/encode");
 const cloudinary_1 = require("cloudinary");
 const mongoose_1 = require("mongoose");
+const User_1 = require("../models/User");
 const createRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const token = (0, cookie_1.getCookie)(c, "access_token");
@@ -245,3 +246,21 @@ const updateRecipe = (c) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.updateRecipe = updateRecipe;
+const getUserRecipes = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = c.req.param("id");
+    if (!(0, mongoose_1.isValidObjectId)(userId) || !userId) {
+        return c.json({
+            status: false,
+            message: "Please search user with valid user id.",
+        }, 404);
+    }
+    const user = yield User_1.User.findById(userId);
+    const recipes = yield Recipe_1.Recipe.find({ user: userId }).sort({
+        createdAt: -1,
+    });
+    return c.json({
+        status: true,
+        data: { numberOfRecipes: recipes.length, recipes, user },
+    });
+});
+exports.getUserRecipes = getUserRecipes;
