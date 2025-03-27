@@ -11,6 +11,12 @@ export const dbClient = async () => {
                     password: process.env.PASSWORD,
                 },
                 authSource: process.env.AUTH_SOURCE,
+                writeConcern: {
+                    w: "majority",
+                    // journal: true,
+                    wtimeoutMS: 5000,
+                },
+                readConcernLevel: "local",
             }
         );
 

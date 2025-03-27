@@ -23,6 +23,12 @@ const dbClient = () => __awaiter(void 0, void 0, void 0, function* () {
                 password: process.env.PASSWORD,
             },
             authSource: process.env.AUTH_SOURCE,
+            writeConcern: {
+                w: "majority",
+                // journal: true,
+                wtimeoutMS: 5000,
+            },
+            readConcernLevel: "local",
         });
         console.log(`MONGODB CONNECTED! ON DB HOST: ${connectionInstance.connection.host} ON PORT: ${connectionInstance.connection.port}`);
     }
