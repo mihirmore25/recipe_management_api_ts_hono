@@ -10,6 +10,7 @@ const logger_1 = require("hono/logger");
 const auth_1 = __importDefault(require("./routes/auth"));
 const recipe_1 = __importDefault(require("./routes/recipe"));
 const cloudinary_1 = require("./middleware/cloudinary");
+const user_1 = __importDefault(require("./routes/user"));
 const app = new hono_1.Hono();
 app.use((0, logger_1.logger)());
 app.use((0, powered_by_1.poweredBy)({ serverName: "Recipe Management REST API with Hono" }));
@@ -17,6 +18,7 @@ app.use(cloudinary_1.cloudinaryMiddleware);
 // Routes
 app.route("/api/v1/auth", auth_1.default);
 app.route("/api/v1/recipes", recipe_1.default);
+app.route("/api/v1/admin/users", user_1.default);
 (0, db_1.dbClient)()
     .then()
     .catch((err) => {
