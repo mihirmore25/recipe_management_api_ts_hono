@@ -25,22 +25,33 @@ const User_1 = require("../models/User");
 const cookie_1 = require("hono/cookie");
 const jwt_1 = require("hono/jwt");
 const verify = (c, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = (0, cookie_1.getCookie)(c, "access_token");
-    if (!token) {
-        return c.json({
-            status: false,
-            message: "Not authorize to access this route, Please try logging in first.",
-        }, 401);
+    try {
+        const token = (0, cookie_1.getCookie)(c, "access_token");
+        if (!token) {
+            return c.json({
+                status: false,
+                message: "Not authorize to access this route, Please try logging in first.",
+            }, 401);
+        }
+        const user_data = yield (0, jwt_1.verify)(token, process.env.JWT_SECRET);
+        if (!user_data)
+            return c.json({
+                status: false,
+                message: "This session has expired. Please login",
+            }, 401);
+        const user = yield User_1.User.findById(user_data.id);
+        const _a = user === null || user === void 0 ? void 0 : user.toObject(), { password } = _a, data = __rest(_a, ["password"]);
+        c.set("user", data);
+        yield next();
     }
-    const user_data = yield (0, jwt_1.verify)(token, process.env.JWT_SECRET);
-    if (!user_data)
-        return c.json({
-            status: false,
-            message: "This session has expired. Please login",
-        });
-    const user = yield User_1.User.findById(user_data.id);
-    const _a = user === null || user === void 0 ? void 0 : user.toObject(), { password } = _a, data = __rest(_a, ["password"]);
-    c.set("user", data);
-    yield next();
+    catch (error) {
+        const err = error;
+        if (err.name === "JwtTokenExpired") {
+            return c.json({
+                error: "Token expired, please login again!",
+            }, 401);
+        }
+        return c.json({ error: "Invalid token" }, 401);
+    }
 });
 exports.verify = verify;
