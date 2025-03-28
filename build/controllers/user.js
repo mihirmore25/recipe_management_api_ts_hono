@@ -9,8 +9,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUser = void 0;
+exports.getUser = exports.getUsers = exports.createUser = void 0;
 const User_1 = require("../models/User");
+const mongoose_1 = require("mongoose");
 const createUser = (c) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, email, password, role } = yield c.req.json();
     if (!username || !email || !password) {
@@ -41,3 +42,43 @@ const createUser = (c) => __awaiter(void 0, void 0, void 0, function* () {
     }, 201);
 });
 exports.createUser = createUser;
+const getUsers = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const users = yield User_1.User.find({})
+        .select("+password")
+        .sort({ createdAt: -1 })
+        .limit(50);
+    if (users.length <= 0) {
+        return c.json({
+            status: false,
+            data: [],
+            message: "No Users found! Please try again or create new User.",
+        }, 404);
+    }
+    return c.json({
+        status: true,
+        data: users,
+        message: "Users found successfully.",
+    }, 200);
+});
+exports.getUsers = getUsers;
+const getUser = (c) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = c.req.param("id");
+    if (!(0, mongoose_1.isValidObjectId)(userId)) {
+        return c.json({
+            status: false,
+            message: "Please search user with valid user id.",
+        }, 404);
+    }
+    const user = yield User_1.User.findById(userId);
+    if (!user) {
+        return c.json({
+            status: false,
+            message: `User did not found with ${userId} id`,
+        }, 404);
+    }
+    return c.json({
+        status: true,
+        data: user,
+    }, 200);
+});
+exports.getUser = getUser;

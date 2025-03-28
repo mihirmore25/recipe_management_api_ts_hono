@@ -1,5 +1,6 @@
 import { Context } from "hono";
 import { User, type IUserSchema } from "../models/User";
+import { isValidObjectId } from "mongoose";
 
 export const createUser = async (c: Context) => {
     const { username, email, password, role }: IUserSchema = await c.req.json();
@@ -42,5 +43,66 @@ export const createUser = async (c: Context) => {
             data: savedUser.toObject(),
         },
         201
+    );
+};
+
+export const getUsers = async (c: Context) => {
+    const users: IUserSchema[] = await User.find({})
+        .select("+password")
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+    if (users.length <= 0) {
+        return c.json(
+            {
+                status: false,
+                data: [],
+                message: "No Users found! Please try again or create new User.",
+            },
+            404
+        );
+    }
+
+    return c.json(
+        {
+            status: true,
+            data: users,
+            message: "Users found successfully.",
+        },
+        200
+    );
+};
+
+export const getUser = async (c: Context) => {
+    const userId = c.req.param("id");
+
+    if (!isValidObjectId(userId)) {
+        return c.json(
+            {
+                status: false,
+                message: "Please search user with valid user id.",
+            },
+            404
+        );
+    }
+
+    const user: IUserSchema | null = await User.findById(userId);
+
+    if (!user) {
+        return c.json(
+            {
+                status: false,
+                message: `User did not found with ${userId} id`,
+            },
+            404
+        );
+    }
+
+    return c.json(
+        {
+            status: true,
+            data: user,
+        },
+        200
     );
 };

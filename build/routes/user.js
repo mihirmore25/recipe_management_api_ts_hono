@@ -6,4 +6,6 @@ const verify_1 = require("../middleware/verify");
 const user_1 = require("../controllers/user");
 const userRoutes = new hono_1.Hono();
 userRoutes.post("/createUser", verify_1.verify, isAdmin_1.isAdmin, user_1.createUser);
+userRoutes.get("/getUsers", verify_1.verify, isAdmin_1.isAdmin, user_1.getUsers);
+userRoutes.get("/getUser/:id", verify_1.verify, isAdmin_1.isAdmin, user_1.getUser);
 exports.default = userRoutes;
